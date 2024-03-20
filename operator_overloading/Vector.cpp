@@ -1,118 +1,134 @@
+#include <cmath>
 #include <iostream>
+#include <vector>
+
+class OutOfRangeException : public std::exception {
+public:
+  const char *what() const noexcept override {
+    return "Индекс вышел за пределы вектора";
+  }
+};
+
+class IncompatibleDimException : public std::exception {
+public:
+  const char *what() const noexcept override {
+    return "Несовместимые размеры для матричных или векторных операций";
+  }
+};
 
 class Vector {
 private:
-  unsigned int size; // Размер вектора
-  double *elements;  // Указатель на массив элементов
+  std::vector<double> elements;
 
 public:
-  // Конструктор с параметрами
-  Vector(unsigned int size, double initial = 0.0);
+  // Конструктор, принимающий размер вектора и начальное значение элементов
+  Vector(int size, double initial = 0.0) : elements(size, initial) {}
 
   // Копирующий конструктор
-  Vector(const Vector &other);
+  Vector(const Vector &other) : elements(other.elements) {}
 
   // Деструктор
-  ~Vector();
+  ~Vector() { std::cout << "Деструктор вызван" << std::endl; }
 
-  // Методы доступа к данным
-  unsigned int get_size() const;
-  double get_element(unsigned int index) const;
-  void set_element(unsigned int index, double value);
+  void print() const {
+    for (const auto &element : elements) {
+      std::cout << element << " ";
+    }
+    std::cout << std::endl;
+  }
+
+  double calculateLength() const {
+    double sumOfSquares = 0.0;
+    for (const auto &element : elements) {
+      sumOfSquares += element * element;
+    }
+    return std::sqrt(sumOfSquares);
+  }
+
+  int getSize() const { return elements.size(); }
 
   // Оператор присваивания
-  Vector &operator=(const Vector &other);
+  Vector &operator=(const Vector &other) {
+    elements = other.elements;
+    return *this;
+  }
 
   // Оператор +=
-  Vector &operator+=(const Vector &other);
+  Vector &operator+=(const Vector &other) {
+    for (size_t i = 0; i < elements.size(); ++i) {
+      elements[i] += other.elements[i];
+    }
+    return *this;
+  }
 
   // Оператор -=
-  Vector &operator-=(const Vector &other);
+  Vector &operator-=(const Vector &other) {
+    for (size_t i = 0; i < elements.size(); ++i) {
+      elements[i] -= other.elements[i];
+    }
+    return *this;
+  }
 
   // Бинарный оператор сложения
-  Vector operator+(const Vector &other) const;
+  Vector operator+(const Vector &other) const {
+    Vector result(*this);
+    result += other;
+    return result;
+  }
 
   // Унарный оператор сложения
-  Vector operator+() const;
+  Vector operator+() const { return *this; }
 
   // Бинарный оператор вычитания
-  Vector operator-(const Vector &other) const;
-
+  Vector operator-(const Vector &other) const {
+    Vector result(*this);
+    result -= other;
+    return result;
+  }
   // Унарный оператор вычитания
-  Vector operator-() const;
+  Vector operator-() const {
+    Vector result(*this);
+    for (double &element : result.elements) {
+      element = -element;
+    }
+    return result;
+  }
 
   // Оператор умножения вектора на число
-  Vector operator*(double scalar) const;
-
-  // Оператор умножения вектора на вектор (скалярное произведение)
-  double operator*(const Vector &other) const;
-
-  // Оператор умножения вектора на матрицу (необходимо определить отдельно класс
-  // Matrix)
-
-  // Оператор умножения числа на вектор
-  friend Vector operator*(double scalar, const Vector &vec);
-
-  // Оператор доступа к элементам по индексу
-  double &operator[](unsigned index);
-  // Чтение по индексу
-  double operator[](unsigned index) const;
-
-  // Оператор вывода вектора в поток
-  friend std::ostream &operator<<(std::ostream &os, const Vector &vec);
-
-  // Оператор ввода вектора из потока
-  friend std::istream &operator>>(std::istream &is, Vector &vec);
+  Vector operator*(double scalar) const {
+    Vector result(*this);
+    for (double &element : result.elements) {
+      element *= scalar;
+    }
+    return result;
+  }
+  // Оператор скалярного произведения векторов
+  double operator*(const Vector &other) const {
+    double dotProduct = 0.0;
+    for (size_t i = 0; i < elements.size(); ++i) {
+      dotProduct += elements[i] * other.elements[i];
+    }
+    return dotProduct;
+  }
 
   // Оператор приведения типа к указателю на double
-  explicit operator double *() { return elements; }
+  operator double *() { return elements.data(); }
 
-  // Метод вычисления длины вектора
-  double length() const;
+  // Оператор индексации []
+  double &operator[](int index) { return elements[index]; }
 
-  // Метод, возвращающий размерность вектора
-  unsigned int dimension() const;
+  // Оператор вывода <<
+  friend std::ostream &operator<<(std::ostream &os, const Vector &vector) {
+    for (const auto &element : vector.elements) {
+      os << element << " ";
+    }
+    return os;
+  }
+  // Оператор ввода >>
+  friend std::istream &operator>>(std::istream &is, Vector &vector) {
+    for (auto &element : vector.elements) {
+      is >> element;
+    }
+    return is;
+  }
 };
-
-// Реализация методов и операторов класса Vector
-
-// Реализация конструктора с параметрами
-Vector::Vector(unsigned int size, double initial) : size(size) {
-  elements = new double[size];
-  for (unsigned int i = 0; i < size; ++i) {
-    elements[i] = initial;
-  }
-}
-
-// Реализация копирующего конструктора
-Vector::Vector(const Vector &other) : size(other.size) {
-  elements = new double[size];
-  for (unsigned int i = 0; i < size; ++i) {
-    elements[i] = other.elements[i];
-  }
-}
-
-// Реализация деструктора
-Vector::~Vector() { delete[] elements; }
-
-// Метод получения размера вектора
-unsigned int Vector::get_size() const { return size; }
-
-// Метод получения элемента по индексу
-double Vector::get_element(unsigned int index) const {
-  if (index < size) {
-    return elements[index];
-  } else {
-    // Обработка ошибки, например, выброс исключения
-    return 0.0;
-  }
-}
-
-// Метод установки значения элемента по индексу
-void Vector::set_element(unsigned int index, double value) {
-  if (index < size) {
-    elements[index] = value;
-  } else {
-    // Обработка ошибки, например, выброс исключения
-  }
-}
