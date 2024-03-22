@@ -1,134 +1,150 @@
-#include <cmath>
+#include "Vector.h"
 #include <iostream>
-#include <vector>
 
-class OutOfRangeException : public std::exception {
-public:
-  const char *what() const noexcept override {
-    return "Индекс вышел за пределы вектора";
+Vector::Vector(const Vector &other) {
+  size = other.size;
+  array = new double[size];
+  for (int i = 0; i < size; ++i) {
+    array[i] = other.array[i];
   }
-};
+}
 
-class IncompatibleDimException : public std::exception {
-public:
-  const char *what() const noexcept override {
-    return "Несовместимые размеры для матричных или векторных операций";
-  }
-};
+// Конструктор с заданным размером
+Vector::Vector(int size) {
+  this->size = size;
+  array = new double[size];
+}
 
-class Vector {
-private:
-  std::vector<double> elements;
+// Деструктор
+Vector::~Vector() {
+  delete[] array;
+  std::cout << "Деструктор вызван" << std::endl;
+}
 
-public:
-  // Конструктор, принимающий размер вектора и начальное значение элементов
-  Vector(int size, double initial = 0.0) : elements(size, initial) {}
-
-  // Копирующий конструктор
-  Vector(const Vector &other) : elements(other.elements) {}
-
-  // Деструктор
-  ~Vector() { std::cout << "Деструктор вызван" << std::endl; }
-
-  void print() const {
-    for (const auto &element : elements) {
-      std::cout << element << " ";
+// Оператор присваивания
+Vector &Vector::operator=(const Vector &other) {
+  if (this != &other) {
+    delete[] array;
+    size = other.size;
+    array = new double[size];
+    for (int i = 0; i < size; ++i) {
+      array[i] = other.array[i];
     }
-    std::cout << std::endl;
   }
+  return *this;
+}
 
-  double calculateLength() const {
-    double sumOfSquares = 0.0;
-    for (const auto &element : elements) {
-      sumOfSquares += element * element;
+// Метод для получения размера вектора
+int Vector::getSize() const { return size; }
+
+// Оператор +=
+Vector &Vector::operator+=(const Vector &other) {
+  for (int i = 0; i < size; ++i) {
+    array[i] += other.array[i];
+  }
+  return *this;
+}
+
+// Оператор -=
+Vector &Vector::operator-=(const Vector &other) {
+  for (int i = 0; i < size; ++i) {
+    array[i] -= other.array[i];
+  }
+  return *this;
+}
+
+// Оператор + (бинарный)
+Vector Vector::operator+(const Vector &other) const {
+  Vector result(size);
+  for (int i = 0; i < size; ++i) {
+    result.array[i] = array[i] + other.array[i];
+  }
+  return result;
+}
+
+// Оператор + (унарный)
+Vector Vector::operator+() const {
+  Vector result(size);
+  for (int i = 0; i < size; ++i) {
+    result.array[i] = array[i];
+  }
+  return result;
+}
+
+// Оператор - (бинарный)
+Vector Vector::operator-(const Vector &other) const {
+  Vector result(size);
+  for (int i = 0; i < size; ++i) {
+    result.array[i] = array[i] - other.array[i];
+  }
+  return result;
+}
+
+// Оператор - (унарный)
+Vector Vector::operator-() const {
+  Vector result(size);
+  for (int i = 0; i < size; ++i) {
+    result.array[i] = -array[i];
+  }
+  return result;
+}
+
+// Оператор * (умножение на число)
+Vector Vector::operator*(double scalar) const {
+  Vector result(size);
+  for (int i = 0; i < size; ++i) {
+    result.array[i] = array[i] * scalar;
+  }
+  return result;
+}
+
+// Оператор * (скалярное произведение)
+double Vector::operator*(const Vector &other) const {
+  double dotProduct = 0.0;
+  for (int i = 0; i < size; ++i) {
+    dotProduct += array[i] * other.array[i];
+  }
+  return dotProduct;
+}
+/*
+Vector Vector::operator*(const double *matrix, int matrixSize) const {
+  Vector result(matrixSize);
+  for (int i = 0; i < matrixSize; ++i) {
+    double sum = 0.0;
+    for (int j = 0; j < size; ++j) {
+      sum += matrix[i][j] * array[j];
     }
-    return std::sqrt(sumOfSquares);
+    result[i] = sum;
   }
+  return result;
+}
+*/
+// Оператор * (умножение числа на вектор)
+Vector operator*(double scalar, const Vector &vec) { return vec * scalar; }
 
-  int getSize() const { return elements.size(); }
+// Оператор []
+double &Vector::operator[](int index) { return array[index]; }
 
-  // Оператор присваивания
-  Vector &operator=(const Vector &other) {
-    elements = other.elements;
-    return *this;
-  }
-
-  // Оператор +=
-  Vector &operator+=(const Vector &other) {
-    for (size_t i = 0; i < elements.size(); ++i) {
-      elements[i] += other.elements[i];
+// Оператор вывода <<
+std::ostream &operator<<(std::ostream &out, const Vector &vec) {
+  out << "[";
+  for (int i = 0; i < vec.size; ++i) {
+    out << vec.array[i];
+    if (i != vec.size - 1) {
+      out << ", ";
     }
-    return *this;
   }
+  out << "]";
+  return out;
+}
 
-  // Оператор -=
-  Vector &operator-=(const Vector &other) {
-    for (size_t i = 0; i < elements.size(); ++i) {
-      elements[i] -= other.elements[i];
-    }
-    return *this;
+// Оператор ввода >>
+std::istream &operator>>(std::istream &in, Vector &vec) {
+  for (int i = 0; i < vec.size; ++i) {
+    in >> vec.array[i];
   }
+  return in;
+}
 
-  // Бинарный оператор сложения
-  Vector operator+(const Vector &other) const {
-    Vector result(*this);
-    result += other;
-    return result;
-  }
-
-  // Унарный оператор сложения
-  const Vector &operator+() const { return *this; }
-
-  // Бинарный оператор вычитания
-  Vector operator-(const Vector &other) const {
-    Vector result(*this);
-    result -= other;
-    return result;
-  }
-  // Унарный оператор вычитания
-  Vector operator-() const {
-    Vector result(*this);
-    for (double &element : result.elements) {
-      element = -element;
-    }
-    return result;
-  }
-
-  // Оператор умножения вектора на число
-  Vector operator*(double scalar) const {
-    Vector result(*this);
-    for (double &element : result.elements) {
-      element *= scalar;
-    }
-    return result;
-  }
-  // Оператор скалярного произведения векторов
-  double operator*(const Vector &other) const {
-    double dotProduct = 0.0;
-    for (size_t i = 0; i < elements.size(); ++i) {
-      dotProduct += elements[i] * other.elements[i];
-    }
-    return dotProduct;
-  }
-
-  // Оператор приведения типа к указателю на double
-  operator double *() { return elements.data(); }
-
-  // Оператор индексации []
-  double &operator[](int index) { return elements[index]; }
-
-  // Оператор вывода <<
-  friend std::ostream &operator<<(std::ostream &os, const Vector &vector) {
-    for (const auto &element : vector.elements) {
-      os << element << " ";
-    }
-    return os;
-  }
-  // Оператор ввода >>
-  friend std::istream &operator>>(std::istream &is, Vector &vector) {
-    for (auto &element : vector.elements) {
-      is >> element;
-    }
-    return is;
-  }
-};
+// Оператор приведения типа к указателю на double
+Vector::operator double *() const { return array; }

@@ -1,51 +1,33 @@
 #ifndef VECTOR_H
 #define VECTOR_H
 
-#include <cmath>
 #include <iostream>
-#include <vector>
-
-class OutOfRangeException : public std::exception {
-public:
-  const char *what() const noexcept override {
-    return "Индекс вышел за пределы вектора";
-  }
-};
-
-class IncompatibleDimException : public std::exception {
-public:
-  const char *what() const noexcept override {
-    return "Несовместимые размеры для матричных или векторных операций";
-  }
-};
 
 class Vector {
-private:
-  std::vector<double> elements;
-
 public:
-  Vector(int size, double initial = 0.0);
   Vector(const Vector &other);
+  Vector(int size);
   ~Vector();
-
-  void print() const;
-  double calculateLength() const;
-  int getSize() const;
-
   Vector &operator=(const Vector &other);
+  int getSize() const;
   Vector &operator+=(const Vector &other);
   Vector &operator-=(const Vector &other);
   Vector operator+(const Vector &other) const;
-  const Vector operator+() const;
+  Vector operator+() const;
   Vector operator-(const Vector &other) const;
   Vector operator-() const;
   Vector operator*(double scalar) const;
   double operator*(const Vector &other) const;
-  operator double *();
+  // Vector operator*(const double **matrix, int matrixSize) const;
+  friend Vector operator*(double scalar, const Vector &vec);
   double &operator[](int index);
+  friend std::ostream &operator<<(std::ostream &out, const Vector &vec);
+  friend std::istream &operator>>(std::istream &in, Vector &vec);
+  operator double *() const;
 
-  friend std::ostream &operator<<(std::ostream &os, const Vector &vector);
-  friend std::istream &operator>>(std::istream &is, Vector &vector);
+private:
+  int size;
+  double *array;
 };
 
-#endif // VECTOR_H
+#endif
