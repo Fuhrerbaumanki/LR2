@@ -77,7 +77,7 @@ public:
   }
 
   // Унарный оператор сложения
-  Vector operator+() const { return *this; }
+  const Vector &operator+() const { return *this; }
 
   // Бинарный оператор вычитания
   Vector operator-(const Vector &other) const {
