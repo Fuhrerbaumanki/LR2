@@ -29,4 +29,4 @@ private:
   double *array;
 };
 
-#endif
+#endif // VECTOR_H
