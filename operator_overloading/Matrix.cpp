@@ -1,107 +1,106 @@
+#include "Matrix.h"
+#include "Vector.h"
 #include <iostream>
-#include <vector>
+#include <sstream>
 
-class OutOfRangeException : public std::exception {
-public:
-  const char *what() const noexcept override {
-    return "Индекс вышел за пределы";
-  }
-};
+CSLRMatrix::CSLRMatrix(int numRows, int numNonZeros, const double *valuesArray,
+                       const int *columnsArray, const int *rowPointersArray)
+    : numRows(numRows), numNonZeros(numNonZeros) {
+  values = new double[numNonZeros];
+  columns = new int[numNonZeros];
+  rowPointers = new int[numRows + 1];
 
-class IncompatibleDimException : public std::exception {
-public:
-  const char *what() const noexcept override { return "Ошибка размерности"; }
-};
+  std::copy(valuesArray, valuesArray + numNonZeros, values);
+  std::copy(columnsArray, columnsArray + numNonZeros, columns);
+  std::copy(rowPointersArray, rowPointersArray + numRows + 1, rowPointers);
+}
 
-class CSLRMatrix {
-private:
-  unsigned size;
-  std::vector<double> values;
-  std::vector<unsigned> col_indexes;
-  std::vector<unsigned> row_ptrs;
+CSLRMatrix::~CSLRMatrix() {
+  delete[] values;
+  delete[] columns;
+  delete[] rowPointers;
+}
 
-public:
-  CSLRMatrix(unsigned size) : size(size) { row_ptrs.push_back(0); }
-
-  CSLRMatrix operator*(double scalar) const {
-    CSLRMatrix result(size * scalar);
-    for (unsigned i = 0; i < values.size(); ++i) {
-      result.values.push_back(values[i] * scalar);
-      result.col_indexes.push_back(col_indexes[i]);
-      if (i % size == 0) {
-        result.row_ptrs.push_back(result.values.size());
-      }
-    }
-    return result;
-  }
-
-  friend CSLRMatrix operator*(double scalar, const CSLRMatrix &matrix) {
-    return matrix * scalar;
-  }
-
-  unsigned count_nonzero_elements() const { return values.size(); }
-
-  void set_element(unsigned row, unsigned col, double value) {
-    unsigned index = row_ptrs[row];
-    while (index < row_ptrs[row + 1] && col_indexes[index] <= col) {
-      if (col_indexes[index] == col) {
-        values[index] = value;
-        return;
-      }
-      index++;
-    }
-    values.insert(values.begin() + index, value);
-    col_indexes.insert(col_indexes.begin() + index, col);
-    for (unsigned i = row + 1; i < row_ptrs.size(); ++i) {
-      row_ptrs[i]++;
+void CSLRMatrix::printMatrix() const {
+  for (int i = 0; i < numRows; ++i) {
+    for (int j = rowPointers[i]; j < rowPointers[i + 1]; ++j) {
+      std::cout << "Строка: " << i << ", Столбец: " << columns[j]
+                << ", Значение: " << values[j] << std::endl;
     }
   }
+}
 
-  double get_element(unsigned row, unsigned col) const {
-    for (unsigned i = row_ptrs[row]; i < row_ptrs[row + 1]; ++i) {
-      if (col_indexes[i] == col) {
-        return values[i];
-      }
-    }
-    return 0.0; // Assuming 0 for missing elements
+int CSLRMatrix::getNumRows() const { return numRows; }
+
+int CSLRMatrix::getNumNonZeros() const { return numNonZeros; }
+
+std::istream &operator>>(std::istream &in, CSLRMatrix &matrix) {
+  int numRows, numNonZeros;
+  in >> numRows >> numNonZeros;
+
+  double *values = new double[numNonZeros];
+  int *columns = new int[numNonZeros];
+  int *rowPointers = new int[numRows + 1];
+
+  for (int i = 0; i < numNonZeros; ++i) {
+    in >> values[i] >> columns[i];
   }
 
-  double &operator()(unsigned row, unsigned col) {
-    unsigned index = row_ptrs[row];
-    while (index < row_ptrs[row + 1] && col_indexes[index] <= col) {
-      if (col_indexes[index] == col) {
-        return values[index];
-      }
-      index++;
-    }
-    values.insert(values.begin() + index, 0.0);
-    col_indexes.insert(col_indexes.begin() + index, col);
-    for (unsigned i = row + 1; i < row_ptrs.size(); ++i) {
-      row_ptrs[i]++;
-    }
-    return values[index];
+  for (int i = 0; i < numRows + 1; ++i) {
+    in >> rowPointers[i];
   }
 
-  friend std::istream &operator>>(std::istream &is, CSLRMatrix &matrix) {
-    double value;
-    for (unsigned i = 0; i < matrix.size; ++i) {
-      for (unsigned j = 0; j < matrix.size; ++j) {
-        is >> value;
-        if (value != 0.0) {
-          matrix.set_element(i, j, value);
-        }
-      }
+  matrix = CSLRMatrix(numRows, numNonZeros, values, columns, rowPointers);
+
+  delete[] values;
+  delete[] columns;
+  delete[] rowPointers;
+
+  return in;
+}
+
+std::ostream &operator<<(std::ostream &out, const CSLRMatrix &matrix) {
+  std::ostringstream oss;
+
+  for (int i = 0; i < matrix.numRows; ++i) {
+    for (int j = matrix.rowPointers[i]; j < matrix.rowPointers[i + 1]; ++j) {
+      oss << "Строка: " << i << ", Столбец: " << matrix.columns[j]
+          << ", Значение: " << matrix.values[j] << std::endl;
     }
-    return is;
   }
 
-  friend std::ostream &operator<<(std::ostream &os, const CSLRMatrix &matrix) {
-    for (unsigned i = 0; i < matrix.size; ++i) {
-      for (unsigned j = 0; j < matrix.size; ++j) {
-        os << matrix.get_element(i, j) << " ";
-      }
-      os << std::endl;
-    }
-    return os;
+  out << oss.str();
+  return out;
+}
+
+CSLRMatrix operator*(double scalar, const CSLRMatrix &matrix) {
+  double *newValues = new double[matrix.numNonZeros];
+  int *newColumns = new int[matrix.numNonZeros];
+  int *newRowPointers = new int[matrix.numRows + 1];
+
+  for (int i = 0; i < matrix.numNonZeros; ++i) {
+    newValues[i] = scalar * matrix.values[i];
+    newColumns[i] = matrix.columns[i];
   }
-};
+
+  for (int i = 0; i < matrix.numRows + 1; ++i) {
+    newRowPointers[i] = matrix.rowPointers[i];
+  }
+
+  return CSLRMatrix(matrix.numRows, matrix.numNonZeros, newValues, newColumns,
+                    newRowPointers);
+}
+
+Vector CSLRMatrix::operator*(const Vector &vec) const {
+  Vector result(numRows);
+
+  for (int i = 0; i < numRows; ++i) {
+    double sum = 0.0;
+    for (int j = rowPointers[i]; j < rowPointers[i + 1]; ++j) {
+      sum += values[j] * vec[columns[j]];
+    }
+    result[i] = sum;
+  }
+
+  return result;
+}

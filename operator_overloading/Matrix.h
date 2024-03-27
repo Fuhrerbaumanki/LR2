@@ -1,43 +1,31 @@
-#ifndef CSLRMATRIX_H
-#define CSLRMATRIX_H
+#ifndef MATRIX_H
+#define MATRIX_H
 
+#include "Vector.h" // Добавляем включение заголовочного файла для использования класса Vector
 #include <iostream>
-#include <vector>
-#include <stdexcept>
-
-class OutOfRangeException : public std::exception {
-public:
-  const char *what() const noexcept override {
-    return "Индекс вышел за пределы";
-  }
-};
-
-class IncompatibleDimException : public std::exception {
-public:
-  const char *what() const noexcept override { return "Ошибка размерности"; }
-};
 
 class CSLRMatrix {
-private:
-  unsigned size;
-  std::vector<double> values;
-  std::vector<unsigned> col_indexes;
-  std::vector<unsigned> row_ptrs;
-
 public:
-  CSLRMatrix(unsigned size);
+  CSLRMatrix(int numRows, int numNonZeros, const double *valuesArray,
+             const int *columnsArray, const int *rowPointersArray);
+  ~CSLRMatrix();
 
-  CSLRMatrix operator*(double scalar) const;
+  void printMatrix() const;
+  int getNumRows() const;
+  int getNumNonZeros() const;
+
+  friend std::istream &operator>>(std::istream &in, CSLRMatrix &matrix);
+  friend std::ostream &operator<<(std::ostream &out, const CSLRMatrix &matrix);
   friend CSLRMatrix operator*(double scalar, const CSLRMatrix &matrix);
 
-  unsigned count_nonzero_elements() const;
+  Vector operator*(const Vector &vec) const;
 
-  void set_element(unsigned row, unsigned col, double value);
-  double get_element(unsigned row, unsigned col) const;
-  double &operator()(unsigned row, unsigned col);
-
-  friend std::istream &operator>>(std::istream &is, CSLRMatrix &matrix);
-  friend std::ostream &operator<<(std::ostream &os, const CSLRMatrix &matrix);
+private:
+  int numRows;
+  int numNonZeros;
+  double *values;
+  int *columns;
+  int *rowPointers;
 };
 
-#endif // CSLRMATRIX_H
+#endif // MATRIX_H
