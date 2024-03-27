@@ -106,19 +106,20 @@ double Vector::operator*(const Vector &other) const {
   }
   return dotProduct;
 }
-/*
-Vector Vector::operator*(const double *matrix, int matrixSize) const {
+
+Vector MatrixVectorMultiply(const double *matrix, int matrixSize,
+                            const Vector &vec) {
   Vector result(matrixSize);
   for (int i = 0; i < matrixSize; ++i) {
     double sum = 0.0;
-    for (int j = 0; j < size; ++j) {
-      sum += matrix[i][j] * array[j];
+    for (int j = 0; j < vec.getSize(); ++j) {
+      sum += matrix[i * vec.getSize() + j] * vec[j];
     }
     result[i] = sum;
   }
   return result;
 }
-*/
+
 // Оператор * (умножение числа на вектор)
 Vector operator*(double scalar, const Vector &vec) { return vec * scalar; }
 
