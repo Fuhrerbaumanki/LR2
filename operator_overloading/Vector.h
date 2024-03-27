@@ -18,7 +18,6 @@ public:
   Vector operator-() const;
   Vector operator*(double scalar) const;
   double operator*(const Vector &other) const;
-  // Vector operator*(const double **matrix, int matrixSize) const;
   friend Vector operator*(double scalar, const Vector &vec);
   double &operator[](int index);
   friend std::ostream &operator<<(std::ostream &out, const Vector &vec);
